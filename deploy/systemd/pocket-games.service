@@ -1,0 +1,24 @@
+[Unit]
+Description=Pocket Games — your retro game library
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pocket-games
+Group=pocket-games
+ExecStart=/usr/local/bin/pocket-games
+Environment=DATA_DIR=/var/lib/pocket-games
+Environment=PORT=8080
+Environment=LIBRARY_DIR=/srv/games
+Environment=BASE_URL=https://games.example.com
+Environment=SECURE_COOKIES=true
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/pocket-games
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

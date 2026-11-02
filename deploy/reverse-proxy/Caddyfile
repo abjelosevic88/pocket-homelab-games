@@ -1,0 +1,6 @@
+# Pocket Games behind Caddy. Downloads are big and resumable: no buffering.
+games.example.com {
+	reverse_proxy pocket-games:8080 {
+		flush_interval -1
+	}
+}
