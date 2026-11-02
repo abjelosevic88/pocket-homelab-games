@@ -253,6 +253,20 @@ func (s *Server) handlePlayROM(w http.ResponseWriter, r *http.Request) {
 	files, _ := s.store.GameFiles(r.Context(), g.ID)
 	w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
 	w.Header().Set("Cache-Control", "private, max-age=86400")
+	if len(files) > 1 && g.MissingSince == "" && g.TrashedAt == "" {
+		// several files: one zip built once on the server, so it has a size the
+		// player's cache can compare (and the next start does not zip again)
+		p, err := s.cachedZip(g, s.zipEntries(g, files, false, library.StripExt(g.FSName)), false)
+		if err == nil {
+			if fh, err := os.Open(p); err == nil {
+				defer fh.Close()
+				fi, _ := fh.Stat()
+				w.Header().Set("Content-Type", "application/zip")
+				http.ServeContent(w, r, filepath.Base(p), fi.ModTime(), fh)
+				return
+			}
+		}
+	}
 	s.sendGame(w, r, g, files, false)
 }
 
@@ -629,7 +643,8 @@ const playHTML = `<!doctype html>
   window.EJS_threads = !!C.threads && typeof SharedArrayBuffer === 'function';
   window.EJS_backgroundImage = C.cover || undefined;
   window.EJS_backgroundBlur = true;
-  window.EJS_disableDatabases = true;
+  // the browser keeps the game (and its BIOS) after the first start: later starts skip the download
+  window.EJS_CacheLimit = 2 * 1024 * 1024 * 1024;
   if (C.bios) window.EJS_biosUrl = C.bios;
   if (C.state) window.EJS_loadStateURL = C.state;
   const opts = { 'save-state-location': 'browser', 'save-save-interval': C.autoSave ? '30' : '0' };
