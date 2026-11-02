@@ -1,7 +1,7 @@
 // README screenshots and a browser smoke test, against a demo instance (DEMO_DATA=true seeds placeholder
-// games with real names — online, their covers and descriptions are looked up — and months of play):
+// games and months of play; METADATA=false keeps every cover a generated placeholder — no real box art):
 //
-//   DATA_DIR=/tmp/games-demo DEMO_DATA=true AUTH_MODE=none PORT=18227 ./pocket-games
+//   DATA_DIR=/tmp/games-demo DEMO_DATA=true METADATA=false AUTH_MODE=none PORT=18227 ./pocket-games
 //   CDP=http://127.0.0.1:19291 BASE=http://127.0.0.1:18227 node scripts/screenshots.mjs   # any Chrome with remote debugging
 //   SHOTS=0 … node scripts/screenshots.mjs                                                  # checks only
 //   OUT=/tmp/shots … node scripts/screenshots.mjs                                           # somewhere else than docs/screenshots
@@ -42,7 +42,9 @@ async function shot(page, name) { if (shots) await page.screenshot({ path: dir +
 const api = (page, p) => page.evaluate(u => fetch(u).then(r => r.json()), p)
 
 const { ctx: c0, page: p0 } = await session()
-const list = await api(p0, '/api/v1/games?limit=200')
+// with AUTH_MODE=none the demo is seeded on the first request: wait for it
+let list = await api(p0, '/api/v1/games?limit=200')
+for (let i = 0; i < 20 && list.total < 30; i++) { await p0.waitForTimeout(500); list = await api(p0, '/api/v1/games?limit=200') }
 assert.ok(list.total >= 30, 'demo games')
 const byName = n => list.items.find(g => g.name === n)
 const sotn = byName('Castlevania: Symphony of the Night'), aria = byName('Castlevania: Aria of Sorrow')
