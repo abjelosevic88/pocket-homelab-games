@@ -29,6 +29,7 @@ Two APIs on the same port:
 | `GET/POST/PUT/DELETE /collections…` | Your collections; `PUT /collections/{id}/games/{gid}` `{"in": true}` |
 | `GET /platforms` · `GET /platforms/{slug}` · `GET /catalog` | Systems with counts and BIOS checks; every known system |
 | `POST /uploads` → `PUT /uploads/{id}?offset=N` → `POST /uploads/{id}/finish` | Resumable uploads: `{"platform":"psx","name":"Game (USA)/Game (USA).cue","size":123}`, chunks at an offset, then file it (`?scan=0` for all but the last file of a game) |
+| `POST /downloads` → `GET /downloads` | `{"url", "platform"?}` — the server fetches a link (Google Drive / Dropbox / OneDrive share links and archive.org items are turned into the file; local-network addresses only for admins), resumes after drops and files it like an upload; `PUT /downloads/{id}` `{"platform"}` when it waits for a system, `{"retry": true}` after a failure; `DELETE` cancels |
 | `GET /library` · `POST /library/scan` · `POST /library/lookup` | Scan status, look now, look up unmatched games again |
 | `POST /import/romm` | `{"url","username","password","saves":true,"covers":true}` — bring favourites, statuses, collections, saves and states over from a RomM server |
 | `GET /export.json` · `POST /import` | Your own data as JSON, and back |

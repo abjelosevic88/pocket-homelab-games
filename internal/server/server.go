@@ -47,6 +47,11 @@ type Server struct {
 	// background lookups and hashing are nudged the same way
 	workWake chan struct{}
 
+	// downloads from links: a nudge, and the running ones (to cancel them)
+	dlWake    chan struct{}
+	dlMu      sync.Mutex
+	dlRunning map[string]context.CancelFunc
+
 	// the EmulatorJS files being fetched right now (one download per file)
 	ejsMu      sync.Mutex
 	ejsFetches map[string]*sync.WaitGroup
@@ -68,7 +73,9 @@ func New(cfg *config.Config, st *store.Store, log *slog.Logger, webFS fs.FS) *Se
 		core:       core.New(cfg.CoreURL, core.Options{DB: st.DB, TokenFile: cfg.DataDir + "/core.token", UserAgent: cfg.UserAgent}),
 		scanWake:   make(chan struct{}, 1),
 		workWake:   make(chan struct{}, 1),
-		ejsFetches: map[string]*sync.WaitGroup{}}
+		ejsFetches: map[string]*sync.WaitGroup{},
+		dlWake:     make(chan struct{}, 1),
+		dlRunning:  map[string]context.CancelFunc{}}
 }
 
 // Bootstrap seeds the first admin (if configured), the owner's integration
@@ -112,6 +119,7 @@ func (s *Server) Bootstrap(ctx context.Context) error {
 	_ = s.store.PurgeSessions(ctx)
 	go s.scanner(ctx)
 	go s.worker(ctx)
+	go s.downloader(ctx)
 	go s.janitor(ctx)
 	if s.core.Configured() {
 		go s.coreLoop(ctx)

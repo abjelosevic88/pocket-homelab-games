@@ -376,3 +376,11 @@ a.file-row:hover, .file-list li > a:hover { background: var(--hover); }
   .upload-opts .sel { width: 100%; }
 }
 .bios-cell { display: inline-flex; align-items: center; gap: 7px; }
+
+/* links the server downloads */
+.link-bar { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; margin-bottom: 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); }
+.link-bar:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.link-bar input { flex: 1; min-width: 0; border: 0; background: transparent; box-shadow: none !important; padding: 0; height: 36px; }
+.progress span.indeterminate { width: 40% !important; animation: dl-slide 1.4s ease-in-out infinite; }
+@keyframes dl-slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+@media (max-width: 767px) { .link-bar { flex-wrap: wrap; } .link-bar input { flex-basis: calc(100% - 30px); } .link-bar .btn { width: 100%; justify-content: center; } }

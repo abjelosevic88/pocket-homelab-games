@@ -40,6 +40,7 @@ export const useShell = () => useContext(ShellCtx)
 export function createItems(navigate: (to: string) => void): MenuItem[] {
   return [
     { label: 'Upload games', icon: 'upload', hint: 'U', onSelect: () => navigate('/upload') },
+    { label: 'Download from a link', icon: 'link', onSelect: () => navigate('/upload') },
     { label: 'New collection', icon: 'layers', onSelect: () => navigate('/collections?new=1') },
     { label: 'Connect a handheld', icon: 'smartphone', onSelect: () => navigate('/settings/devices') },
   ]

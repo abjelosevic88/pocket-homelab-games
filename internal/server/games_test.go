@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/abjelosevic88/pocket-homelab-games/internal/library"
 	"github.com/abjelosevic88/pocket-homelab-games/internal/store"
@@ -457,5 +458,93 @@ func TestSettingsPerPerson(t *testing.T) {
 	a.ok(a.bob, "PUT", "/api/v1/settings", map[string]any{"grid_size": "l", "title": "Bob's box"})
 	if m := a.ok(a.alice, "GET", "/api/v1/settings", nil); m["grid_size"] != "m" || m["title"] != "Pocket Games" {
 		t.Fatalf("Alice's settings changed: %v %v", m["grid_size"], m["title"])
+	}
+}
+
+func (a *app) waitDownload(auth, id string, want ...string) map[string]any {
+	a.t.Helper()
+	for i := 0; i < 200; i++ {
+		_, _, list := a.call(auth, "GET", "/api/v1/downloads", nil)
+		for _, it := range list {
+			d := it.(map[string]any)
+			if d["id"] == id {
+				for _, w := range want {
+					if d["status"] == w {
+						return d
+					}
+				}
+			}
+		}
+		time.Sleep(30 * time.Millisecond)
+	}
+	a.t.Fatalf("download %s never reached %v", id, want)
+	return nil
+}
+
+// A pasted link is fetched by the server and filed like an upload.
+func TestDownloadFromLink(t *testing.T) {
+	a := newApp(t)
+	site := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/Tetris (World).gb":
+			http.ServeContent(w, r, "Tetris (World).gb", time.Now(), bytes.NewReader(bytes.Repeat([]byte("t"), 32768)))
+		case "/get":
+			w.Header().Set("Content-Disposition", `attachment; filename="Wipeout (Europe).iso"`)
+			_, _ = w.Write(bytes.Repeat([]byte("w"), 5000))
+		case "/page":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = io.WriteString(w, "<html>not a file</html>")
+		}
+	}))
+	t.Cleanup(site.Close)
+
+	// an admin may fetch from the local network
+	d := a.ok(a.alice, "POST", "/api/v1/downloads", map[string]any{"url": site.URL + "/Tetris%20(World).gb"})
+	done := a.waitDownload(a.alice, d["id"].(string), "done", "failed")
+	if done["status"] != "done" || done["platform"] != "gb" || done["game_id"] == nil {
+		t.Fatalf("download = %v", done)
+	}
+	if _, err := os.Stat(filepath.Join(a.lib, "roms/gb/Tetris (World).gb")); err != nil {
+		t.Fatal("the file is not in the library")
+	}
+	// an .iso fits several systems: it waits for the person to pick one
+	d = a.ok(a.alice, "POST", "/api/v1/downloads", map[string]any{"url": site.URL + "/get"})
+	w := a.waitDownload(a.alice, d["id"].(string), "waiting", "failed")
+	if w["status"] != "waiting" || len(w["choices"].([]any)) < 2 || w["file_name"] != "Wipeout (Europe).iso" {
+		t.Fatalf("ambiguous download = %v", w)
+	}
+	a.ok(a.alice, "PUT", "/api/v1/downloads/"+d["id"].(string), map[string]any{"platform": "psx"})
+	a.waitDownload(a.alice, d["id"].(string), "done")
+	// a web page is not a game
+	d = a.ok(a.alice, "POST", "/api/v1/downloads", map[string]any{"url": site.URL + "/page"})
+	if f := a.waitDownload(a.alice, d["id"].(string), "failed", "done"); !strings.Contains(f["error"].(string), "web page") {
+		t.Fatalf("page = %v", f)
+	}
+	// a member may not reach into the local network
+	d = a.ok(a.bob, "POST", "/api/v1/downloads", map[string]any{"url": site.URL + "/Tetris%20(World).gb"})
+	if f := a.waitDownload(a.bob, d["id"].(string), "failed", "done"); !strings.Contains(f["error"].(string), "local network") {
+		t.Fatalf("member local fetch = %v", f)
+	}
+	// and nobody sees anyone else's downloads
+	if code, _, _ := a.call(a.alice, "DELETE", "/api/v1/downloads/"+d["id"].(string), nil); code != http.StatusNotFound {
+		t.Fatalf("Alice deleting Bob's download → %d", code)
+	}
+}
+
+func TestResolveLinks(t *testing.T) {
+	s := &Server{}
+	cases := map[string]string{
+		"https://drive.google.com/file/d/1AbCdEfGhIjKlMn/view?usp=sharing": "https://drive.usercontent.google.com/download?id=1AbCdEfGhIjKlMn&export=download&confirm=t",
+		"https://www.dropbox.com/s/abc/Game.gba?dl=0":                      "https://www.dropbox.com/s/abc/Game.gba?dl=1",
+		"https://example.com/roms/Game.nes":                                "https://example.com/roms/Game.nes",
+	}
+	for in, want := range cases {
+		got, err := s.resolveLink(context.Background(), nil, in)
+		if err != nil || got != want {
+			t.Errorf("%s → %s (%v), want %s", in, got, err, want)
+		}
+	}
+	if _, err := s.resolveLink(context.Background(), nil, "ftp://x/y"); err == nil {
+		t.Error("ftp should be refused")
 	}
 }

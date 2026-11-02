@@ -119,6 +119,10 @@ func (s *Server) Router() http.Handler {
 			r.Put("/uploads/{id}", s.handleUploadChunk)
 			r.Post("/uploads/{id}/finish", s.handleFinishUpload)
 			r.Delete("/uploads/{id}", s.handleCancelUpload)
+			r.Get("/downloads", s.handleListDownloads)
+			r.Post("/downloads", s.handleCreateDownload)
+			r.Put("/downloads/{id}", s.handleUpdateDownload)
+			r.Delete("/downloads/{id}", s.handleDeleteDownload)
 
 			r.Get("/devices", s.handleListDevices)
 			r.Delete("/devices/{id}", s.handleDeleteDevice)

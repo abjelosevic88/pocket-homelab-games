@@ -38,6 +38,7 @@ type Platform struct {
 	Bios     []Bios   `json:"bios"`
 	Aliases  []string `json:"-"`       // other folder names for the same system
 	IGDB     int      `json:"igdb_id"` // RomM apps look systems up by IGDB id
+	Minor    bool     `json:"-"`       // a variant: a file that also fits the main system goes there
 }
 
 // Browser reports whether games of this system play in the browser.
@@ -56,7 +57,7 @@ func (p Platform) NeedsBios() bool {
 var all = []Platform{
 	// Nintendo
 	{Slug: "nes", Name: "Nintendo Entertainment System", Short: "NES", Maker: "Nintendo", Year: 1983, Kind: "console", Ext: []string{"nes", "unf", "unif"}, System: "nes", Cores: []string{"fceumm", "nestopia"}, Libretro: "Nintendo - Nintendo Entertainment System", Wiki: "NES", IGDB: 18},
-	{Slug: "famicom", Name: "Family Computer", Short: "Famicom", Maker: "Nintendo", Year: 1983, Kind: "console", Ext: []string{"nes"}, System: "nes", Cores: []string{"fceumm", "nestopia"}, Libretro: "Nintendo - Nintendo Entertainment System", Wiki: "Famicom", IGDB: 99},
+	{Slug: "famicom", Minor: true, Name: "Family Computer", Short: "Famicom", Maker: "Nintendo", Year: 1983, Kind: "console", Ext: []string{"nes"}, System: "nes", Cores: []string{"fceumm", "nestopia"}, Libretro: "Nintendo - Nintendo Entertainment System", Wiki: "Famicom", IGDB: 99},
 	{Slug: "fds", Name: "Famicom Disk System", Short: "FDS", Maker: "Nintendo", Year: 1986, Kind: "console", Ext: []string{"fds"}, System: "nes", Cores: []string{"fceumm", "nestopia"}, Libretro: "Nintendo - Family Computer Disk System", Wiki: "Famicom Disk System", IGDB: 51,
 		Bios: []Bios{{File: "disksys.rom", MD5: "ca30b50f880eb660a320674ed365ef7a", Required: true}}},
 	{Slug: "snes", Name: "Super Nintendo", Short: "SNES", Maker: "Nintendo", Year: 1990, Kind: "console", Ext: []string{"sfc", "smc", "fig", "swc", "bs"}, System: "snes", Cores: []string{"snes9x"}, Libretro: "Nintendo - Super Nintendo Entertainment System", Wiki: "Super NES", Aliases: []string{"sfam"}, IGDB: 19},
@@ -72,14 +73,14 @@ var all = []Platform{
 		Bios: []Bios{{File: "gba_bios.bin", MD5: "a860e8c0b6d573d191e4ec7db1b1e4f6", Note: "optional: shows the real start-up logo"}}},
 	{Slug: "nds", Name: "Nintendo DS", Short: "DS", Maker: "Nintendo", Year: 2004, Kind: "handheld", Ext: []string{"nds", "dsi"}, System: "nds", Cores: []string{"melonds", "desmume"}, Libretro: "Nintendo - Nintendo DS", Wiki: "Nintendo DS", IGDB: 20,
 		Bios: []Bios{{File: "bios7.bin", MD5: "df692a80a5b1bc90728bc3dfc76cd948"}, {File: "bios9.bin", MD5: "a392174eb3e572fed6447e956bde4b25"}, {File: "firmware.bin"}}},
-	{Slug: "nintendo-dsi", Name: "Nintendo DSi", Short: "DSi", Maker: "Nintendo", Year: 2008, Kind: "handheld", Ext: []string{"nds", "dsi"}, Libretro: "Nintendo - Nintendo DSi", Wiki: "Nintendo DSi", IGDB: 159},
+	{Slug: "nintendo-dsi", Minor: true, Name: "Nintendo DSi", Short: "DSi", Maker: "Nintendo", Year: 2008, Kind: "handheld", Ext: []string{"nds", "dsi"}, Libretro: "Nintendo - Nintendo DSi", Wiki: "Nintendo DSi", IGDB: 159},
 	{Slug: "3ds", Name: "Nintendo 3DS", Short: "3DS", Maker: "Nintendo", Year: 2011, Kind: "handheld", Ext: []string{"3ds", "cia", "cci", "cxi", "3dsx", "app"}, Libretro: "Nintendo - Nintendo 3DS", Wiki: "Nintendo 3DS", IGDB: 37},
-	{Slug: "new-nintendo-3ds", Name: "New Nintendo 3DS", Short: "New 3DS", Maker: "Nintendo", Year: 2014, Kind: "handheld", Ext: []string{"3ds", "cia", "cci", "cxi"}, Libretro: "Nintendo - Nintendo 3DS", Wiki: "New Nintendo 3DS", IGDB: 137},
+	{Slug: "new-nintendo-3ds", Minor: true, Name: "New Nintendo 3DS", Short: "New 3DS", Maker: "Nintendo", Year: 2014, Kind: "handheld", Ext: []string{"3ds", "cia", "cci", "cxi"}, Libretro: "Nintendo - Nintendo 3DS", Wiki: "New Nintendo 3DS", IGDB: 137},
 	{Slug: "virtualboy", Name: "Virtual Boy", Short: "Virtual Boy", Maker: "Nintendo", Year: 1995, Kind: "console", Ext: []string{"vb", "vboy"}, System: "vb", Cores: []string{"beetle_vb"}, Libretro: "Nintendo - Virtual Boy", Wiki: "Virtual Boy", IGDB: 87},
 	{Slug: "pokemon-mini", Name: "Pokémon mini", Short: "Pokémon mini", Maker: "Nintendo", Year: 2001, Kind: "handheld", Ext: []string{"min"}, Libretro: "Nintendo - Pokemon Mini", Wiki: "Pokémon mini", IGDB: 166},
 	{Slug: "g-and-w", Name: "Game & Watch", Short: "Game & Watch", Maker: "Nintendo", Year: 1980, Kind: "handheld", Ext: []string{"mgw"}, Libretro: "Handheld Electronic Game", Wiki: "Game & Watch", IGDB: 307},
-	{Slug: "satellaview", Name: "Satellaview", Short: "Satellaview", Maker: "Nintendo", Year: 1995, Kind: "console", Ext: []string{"bs", "sfc"}, System: "snes", Cores: []string{"snes9x"}, Libretro: "Nintendo - Satellaview", Wiki: "Satellaview", IGDB: 306},
-	{Slug: "sufami-turbo", Name: "Sufami Turbo", Short: "Sufami Turbo", Maker: "Bandai", Year: 1996, Kind: "console", Ext: []string{"st", "sfc"}, System: "snes", Cores: []string{"snes9x"}, Libretro: "Nintendo - Sufami Turbo", Wiki: "Sufami Turbo"},
+	{Slug: "satellaview", Minor: true, Name: "Satellaview", Short: "Satellaview", Maker: "Nintendo", Year: 1995, Kind: "console", Ext: []string{"bs", "sfc"}, System: "snes", Cores: []string{"snes9x"}, Libretro: "Nintendo - Satellaview", Wiki: "Satellaview", IGDB: 306},
+	{Slug: "sufami-turbo", Minor: true, Name: "Sufami Turbo", Short: "Sufami Turbo", Maker: "Bandai", Year: 1996, Kind: "console", Ext: []string{"st", "sfc"}, System: "snes", Cores: []string{"snes9x"}, Libretro: "Nintendo - Sufami Turbo", Wiki: "Sufami Turbo"},
 
 	// Sony
 	{Slug: "psx", Name: "PlayStation", Short: "PS1", Maker: "Sony", Year: 1994, Kind: "console", Ext: []string{"chd", "cue", "bin", "img", "iso", "pbp", "m3u", "ccd", "mdf", "toc", "ecm"}, Disc: true, System: "psx", Cores: []string{"pcsx_rearmed", "mednafen_psx_hw"}, Libretro: "Sony - PlayStation", Wiki: "PlayStation (console)", IGDB: 7,
@@ -98,7 +99,7 @@ var all = []Platform{
 	{Slug: "psvita", Name: "PlayStation Vita", Short: "Vita", Maker: "Sony", Year: 2011, Kind: "handheld", Ext: []string{"vpk", "zip"}, Libretro: "Sony - PlayStation Vita", Wiki: "PlayStation Vita", IGDB: 46},
 
 	// Sega
-	{Slug: "sg1000", Name: "SG-1000", Short: "SG-1000", Maker: "Sega", Year: 1983, Kind: "console", Ext: []string{"sg"}, System: "segaMS", Cores: []string{"genesis_plus_gx", "picodrive"}, Libretro: "Sega - SG-1000", Wiki: "SG-1000", IGDB: 84},
+	{Slug: "sg1000", Minor: true, Name: "SG-1000", Short: "SG-1000", Maker: "Sega", Year: 1983, Kind: "console", Ext: []string{"sg"}, System: "segaMS", Cores: []string{"genesis_plus_gx", "picodrive"}, Libretro: "Sega - SG-1000", Wiki: "SG-1000", IGDB: 84},
 	{Slug: "sms", Name: "Master System", Short: "Master System", Maker: "Sega", Year: 1985, Kind: "console", Ext: []string{"sms"}, System: "segaMS", Cores: []string{"smsplus", "genesis_plus_gx", "picodrive"}, Libretro: "Sega - Master System - Mark III", Wiki: "Master System", IGDB: 64},
 	{Slug: "genesis", Name: "Sega Genesis / Mega Drive", Short: "Genesis", Maker: "Sega", Year: 1988, Kind: "console", Ext: []string{"md", "gen", "smd", "bin", "68k", "sgd"}, System: "segaMD", Cores: []string{"genesis_plus_gx", "picodrive"}, Libretro: "Sega - Mega Drive - Genesis", Wiki: "Sega Genesis", Aliases: []string{"genesis-slash-megadrive", "megadrive", "md"}, IGDB: 29},
 	{Slug: "gamegear", Name: "Game Gear", Short: "Game Gear", Maker: "Sega", Year: 1990, Kind: "handheld", Ext: []string{"gg"}, System: "segaGG", Cores: []string{"genesis_plus_gx"}, Libretro: "Sega - Game Gear", Wiki: "Game Gear", IGDB: 35},
@@ -113,20 +114,20 @@ var all = []Platform{
 		Bios: []Bios{{File: "saturn_bios.bin", MD5: "af5828fdff51384f99b3c4926be27762", Note: "makes more games work"}}},
 	{Slug: "dc", Name: "Dreamcast", Short: "Dreamcast", Maker: "Sega", Year: 1998, Kind: "console", Ext: []string{"chd", "gdi", "cdi", "cue", "bin", "m3u"}, Disc: true, Libretro: "Sega - Dreamcast", Wiki: "Dreamcast", IGDB: 23,
 		Bios: []Bios{{File: "dc_boot.bin", MD5: "e10c53c2f8b90bab96ead2d368858623"}, {File: "dc_flash.bin"}}},
-	{Slug: "sega-pico", Name: "Sega Pico", Short: "Pico", Maker: "Sega", Year: 1993, Kind: "console", Ext: []string{"md", "bin"}, System: "segaMD", Cores: []string{"picodrive"}, Libretro: "Sega - PICO", Wiki: "Sega Pico", IGDB: 339},
+	{Slug: "sega-pico", Minor: true, Name: "Sega Pico", Short: "Pico", Maker: "Sega", Year: 1993, Kind: "console", Ext: []string{"md", "bin"}, System: "segaMD", Cores: []string{"picodrive"}, Libretro: "Sega - PICO", Wiki: "Sega Pico", IGDB: 339},
 
 	// NEC / SNK / Bandai / others
 	{Slug: "tg16", Name: "TurboGrafx-16 / PC Engine", Short: "TG-16", Maker: "NEC", Year: 1987, Kind: "console", Ext: []string{"pce", "sgx"}, System: "pce", Cores: []string{"mednafen_pce"}, Libretro: "NEC - PC Engine - TurboGrafx 16", Wiki: "TurboGrafx-16", Aliases: []string{"pce", "pc-engine"}, IGDB: 86},
 	{Slug: "turbografx-cd", Name: "TurboGrafx-CD / PC Engine CD", Short: "TG-CD", Maker: "NEC", Year: 1988, Kind: "console", Ext: []string{"chd", "cue", "bin", "iso", "ccd", "m3u"}, Disc: true, System: "pce", Cores: []string{"mednafen_pce"}, Libretro: "NEC - PC Engine CD - TurboGrafx-CD", Wiki: "TurboGrafx-CD", IGDB: 150,
 		Bios: []Bios{{File: "syscard3.pce", MD5: "38179df8f4ac870017db21ebcbf53114", Required: true}}},
-	{Slug: "supergrafx", Name: "SuperGrafx", Short: "SuperGrafx", Maker: "NEC", Year: 1989, Kind: "console", Ext: []string{"pce", "sgx"}, System: "pce", Cores: []string{"mednafen_pce"}, Libretro: "NEC - PC Engine SuperGrafx", Wiki: "SuperGrafx", IGDB: 128},
+	{Slug: "supergrafx", Minor: true, Name: "SuperGrafx", Short: "SuperGrafx", Maker: "NEC", Year: 1989, Kind: "console", Ext: []string{"pce", "sgx"}, System: "pce", Cores: []string{"mednafen_pce"}, Libretro: "NEC - PC Engine SuperGrafx", Wiki: "SuperGrafx", IGDB: 128},
 	{Slug: "pc-fx", Name: "PC-FX", Short: "PC-FX", Maker: "NEC", Year: 1994, Kind: "console", Ext: []string{"chd", "cue", "bin", "ccd", "m3u"}, Disc: true, System: "pcfx", Cores: []string{"mednafen_pcfx"}, Libretro: "NEC - PC-FX", Wiki: "PC-FX", IGDB: 274,
 		Bios: []Bios{{File: "pcfx.rom", MD5: "08e36edbea28a017f79f8d4f7ff9b6d7", Required: true}}},
 	{Slug: "neo-geo-pocket", Name: "Neo Geo Pocket", Short: "NGP", Maker: "SNK", Year: 1998, Kind: "handheld", Ext: []string{"ngp"}, System: "ngp", Cores: []string{"mednafen_ngp"}, Libretro: "SNK - Neo Geo Pocket", Wiki: "Neo Geo Pocket", IGDB: 119},
 	{Slug: "neo-geo-pocket-color", Name: "Neo Geo Pocket Color", Short: "NGPC", Maker: "SNK", Year: 1999, Kind: "handheld", Ext: []string{"ngc", "ngpc", "npc"}, System: "ngp", Cores: []string{"mednafen_ngp"}, Libretro: "SNK - Neo Geo Pocket Color", Wiki: "Neo Geo Pocket Color", IGDB: 120},
 	{Slug: "neogeoaes", Name: "Neo Geo AES", Short: "Neo Geo", Maker: "SNK", Year: 1990, Kind: "console", Ext: []string{"zip", "7z"}, System: "arcade", Cores: []string{"fbneo"}, Libretro: "SNK - Neo Geo", Wiki: "Neo Geo (system)", IGDB: 80,
 		Bios: []Bios{{File: "neogeo.zip", Required: true, Note: "keep it next to the games too"}}},
-	{Slug: "neogeomvs", Name: "Neo Geo MVS", Short: "MVS", Maker: "SNK", Year: 1990, Kind: "arcade", Ext: []string{"zip", "7z"}, System: "arcade", Cores: []string{"fbneo"}, Libretro: "SNK - Neo Geo", Wiki: "Neo Geo (system)", IGDB: 79,
+	{Slug: "neogeomvs", Minor: true, Name: "Neo Geo MVS", Short: "MVS", Maker: "SNK", Year: 1990, Kind: "arcade", Ext: []string{"zip", "7z"}, System: "arcade", Cores: []string{"fbneo"}, Libretro: "SNK - Neo Geo", Wiki: "Neo Geo (system)", IGDB: 79,
 		Bios: []Bios{{File: "neogeo.zip", Required: true, Note: "keep it next to the games too"}}},
 	{Slug: "neo-geo-cd", Name: "Neo Geo CD", Short: "Neo Geo CD", Maker: "SNK", Year: 1994, Kind: "console", Ext: []string{"chd", "cue", "bin", "iso"}, Disc: true, Libretro: "SNK - Neo Geo CD", Wiki: "Neo Geo CD", IGDB: 136},
 	{Slug: "wonderswan", Name: "WonderSwan", Short: "WonderSwan", Maker: "Bandai", Year: 1999, Kind: "handheld", Ext: []string{"ws"}, System: "ws", Cores: []string{"mednafen_wswan"}, Libretro: "Bandai - WonderSwan", Wiki: "WonderSwan", IGDB: 57},
@@ -154,7 +155,7 @@ var all = []Platform{
 
 	// Computers
 	{Slug: "c64", Name: "Commodore 64", Short: "C64", Maker: "Commodore", Year: 1982, Kind: "computer", Ext: []string{"d64", "t64", "prg", "crt", "tap", "g64", "d81"}, System: "c64", Cores: []string{"vice_x64sc"}, Libretro: "Commodore - 64", Wiki: "Commodore 64", IGDB: 15},
-	{Slug: "c128", Name: "Commodore 128", Short: "C128", Maker: "Commodore", Year: 1985, Kind: "computer", Ext: []string{"d64", "d71", "d81", "prg", "t64"}, System: "c128", Cores: []string{"vice_x128"}, Libretro: "Commodore - 128", Wiki: "Commodore 128", IGDB: 15},
+	{Slug: "c128", Minor: true, Name: "Commodore 128", Short: "C128", Maker: "Commodore", Year: 1985, Kind: "computer", Ext: []string{"d64", "d71", "d81", "prg", "t64"}, System: "c128", Cores: []string{"vice_x128"}, Libretro: "Commodore - 128", Wiki: "Commodore 128", IGDB: 15},
 	{Slug: "vic-20", Name: "Commodore VIC-20", Short: "VIC-20", Maker: "Commodore", Year: 1980, Kind: "computer", Ext: []string{"prg", "crt", "d64", "tap", "20", "a0"}, System: "vic20", Cores: []string{"vice_xvic"}, Libretro: "Commodore - VIC-20", Wiki: "VIC-20", IGDB: 71},
 	{Slug: "amiga", Name: "Amiga", Short: "Amiga", Maker: "Commodore", Year: 1985, Kind: "computer", Ext: []string{"adf", "adz", "dms", "ipf", "hdf", "lha", "m3u"}, System: "amiga", Cores: []string{"puae"}, Libretro: "Commodore - Amiga", Wiki: "Amiga", IGDB: 16,
 		Bios: []Bios{{File: "kick34005.A500", MD5: "82a21c1890cae844b3df741f2762d48d", Note: "Kickstart 1.3; without it a free replacement is used"}}},
@@ -175,9 +176,9 @@ var all = []Platform{
 
 	// Arcade
 	{Slug: "arcade", Name: "Arcade", Short: "Arcade", Maker: "Various", Year: 1971, Kind: "arcade", Ext: []string{"zip", "7z"}, System: "arcade", Cores: []string{"fbneo", "mame2003_plus"}, Libretro: "MAME", Wiki: "Arcade video game", Aliases: []string{"mame", "fbneo"}, IGDB: 52},
-	{Slug: "cps1", Name: "Capcom CPS-1", Short: "CPS-1", Maker: "Capcom", Year: 1988, Kind: "arcade", Ext: []string{"zip"}, System: "arcade", Cores: []string{"fbneo", "fbalpha2012_cps1"}, Libretro: "FBNeo - Arcade Games", Wiki: "CP System"},
-	{Slug: "cps2", Name: "Capcom CPS-2", Short: "CPS-2", Maker: "Capcom", Year: 1993, Kind: "arcade", Ext: []string{"zip"}, System: "arcade", Cores: []string{"fbneo", "fbalpha2012_cps2"}, Libretro: "FBNeo - Arcade Games", Wiki: "CP System II"},
-	{Slug: "cps3", Name: "Capcom CPS-3", Short: "CPS-3", Maker: "Capcom", Year: 1996, Kind: "arcade", Ext: []string{"zip"}, System: "arcade", Cores: []string{"fbneo"}, Libretro: "FBNeo - Arcade Games", Wiki: "CP System III"},
+	{Slug: "cps1", Minor: true, Name: "Capcom CPS-1", Short: "CPS-1", Maker: "Capcom", Year: 1988, Kind: "arcade", Ext: []string{"zip"}, System: "arcade", Cores: []string{"fbneo", "fbalpha2012_cps1"}, Libretro: "FBNeo - Arcade Games", Wiki: "CP System"},
+	{Slug: "cps2", Minor: true, Name: "Capcom CPS-2", Short: "CPS-2", Maker: "Capcom", Year: 1993, Kind: "arcade", Ext: []string{"zip"}, System: "arcade", Cores: []string{"fbneo", "fbalpha2012_cps2"}, Libretro: "FBNeo - Arcade Games", Wiki: "CP System II"},
+	{Slug: "cps3", Minor: true, Name: "Capcom CPS-3", Short: "CPS-3", Maker: "Capcom", Year: 1996, Kind: "arcade", Ext: []string{"zip"}, System: "arcade", Cores: []string{"fbneo"}, Libretro: "FBNeo - Arcade Games", Wiki: "CP System III"},
 
 	// Microsoft consoles
 	{Slug: "xbox", Name: "Xbox", Short: "Xbox", Maker: "Microsoft", Year: 2001, Kind: "console", Ext: []string{"iso", "xiso"}, Disc: true, Libretro: "Microsoft - Xbox", Wiki: "Xbox (console)", IGDB: 11},
@@ -240,18 +241,27 @@ func Title(slug string) string {
 
 // ForExtension lists the systems whose games use this file extension (lower
 // case, no dot). One answer = the upload can be filed without asking.
+// Variants (Famicom next to NES, DSi next to DS…) only count when no main
+// system takes the extension.
 func ForExtension(ext string) []string {
 	ext = strings.ToLower(strings.TrimPrefix(ext, "."))
-	var out []string
+	var main, minor []string
 	for _, p := range all {
 		for _, e := range p.Ext {
 			if e == ext {
-				out = append(out, p.Slug)
+				if p.Minor {
+					minor = append(minor, p.Slug)
+				} else {
+					main = append(main, p.Slug)
+				}
 				break
 			}
 		}
 	}
-	return out
+	if len(main) > 0 {
+		return main
+	}
+	return minor
 }
 
 // GameExtension reports whether a file with this extension can be a game of

@@ -184,20 +184,35 @@ func (s *Server) handleFinishUpload(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusConflict, map[string]any{"error": "not all of the file arrived yet", "received": up.Received})
 		return
 	}
-	target, err := s.fileUpload(up)
+	gameID, err := s.fileAndScan(ctx, u.ID, up, r.URL.Query().Get("scan") != "0")
 	if err != nil {
 		_ = s.store.FinishUpload(ctx, up.ID, "failed", err.Error(), 0)
-		_ = os.Remove(s.partPath(up.ID))
 		s.tellUpload(ctx, u.ID, up, err)
 		writeErr(w, http.StatusConflict, err.Error())
 		return
 	}
+	_ = s.store.FinishUpload(ctx, up.ID, "done", "", gameID)
+	if up.SizeBytes > 256<<20 {
+		s.tellUpload(ctx, u.ID, up, nil)
+	}
+	up, _ = s.store.GetUpload(ctx, u.ID, up.ID)
+	writeJSON(w, http.StatusOK, up)
+}
+
+// fileAndScan files a finished upload or download into the library and (scan)
+// reads the platform folder again; it returns the game the file became.
+func (s *Server) fileAndScan(ctx context.Context, uid int64, up *store.Upload, scan bool) (int64, error) {
+	target, err := s.fileUpload(up)
+	if err != nil {
+		_ = os.Remove(s.partPath(up.ID))
+		return 0, err
+	}
 	var gameID int64
 	if up.Kind == "firmware" {
 		s.scanFirmware(ctx)
-	} else if r.URL.Query().Get("scan") != "0" {
+	} else if scan {
 		top := strings.SplitN(filepath.ToSlash(target), "/", 2)[0]
-		_ = s.scanAll(context.WithoutCancel(ctx), map[string]int64{up.Platform + "/" + top: u.ID})
+		_ = s.scanAll(context.WithoutCancel(ctx), map[string]int64{up.Platform + "/" + top: uid})
 		if pl, err := s.store.GetPlatform(ctx, up.Platform); err == nil {
 			if g, err := s.store.GameByPath(ctx, pl.ID, top); err == nil {
 				gameID = g.ID
@@ -206,12 +221,7 @@ func (s *Server) handleFinishUpload(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	_ = s.store.FinishUpload(ctx, up.ID, "done", "", gameID)
-	if up.SizeBytes > 256<<20 {
-		s.tellUpload(ctx, u.ID, up, nil)
-	}
-	up, _ = s.store.GetUpload(ctx, u.ID, up.ID)
-	writeJSON(w, http.StatusOK, up)
+	return gameID, nil
 }
 
 // findLooseGame finds the game a loose file joined ("Game (Track 2).bin" → "Game.cue").
@@ -392,6 +402,22 @@ func (s *Server) dropStaleUploads(ctx context.Context) {
 		_ = s.store.DeleteUpload(ctx, id)
 	}
 	_, _ = s.store.DB.ExecContext(ctx, `DELETE FROM uploads WHERE status != 'open' AND updated_at < ?`, time.Now().Add(-7*24*time.Hour).UTC().Format(time.RFC3339Nano))
+	// failed or never-sorted downloads give their disk space back after two days
+	rows, err := s.store.DB.QueryContext(ctx, `SELECT id FROM downloads WHERE status IN ('failed','waiting') AND updated_at < ?`, time.Now().Add(-48*time.Hour).UTC().Format(time.RFC3339Nano))
+	if err == nil {
+		var old []string
+		for rows.Next() {
+			var id string
+			if rows.Scan(&id) == nil {
+				old = append(old, id)
+			}
+		}
+		rows.Close()
+		for _, id := range old {
+			_ = os.Remove(s.partPath(id))
+			_ = s.store.UpdateDownload(ctx, id, store.DownloadPatch{Status: strp("failed"), Error: strp("removed after two days without a system")})
+		}
+	}
 }
 
 func (s *Server) tellUpload(ctx context.Context, uid int64, up *store.Upload, err error) {

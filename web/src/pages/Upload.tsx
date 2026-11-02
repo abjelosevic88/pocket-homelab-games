@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api, ApiError, V1 } from '../lib/api'
 import { COMPANION_EXT, ext, SHEET_EXT, stem } from '../lib/games'
-import type { CatalogPlatform, Upload as UploadT } from '../lib/types'
+import type { CatalogPlatform, Download, Upload as UploadT } from '../lib/types'
 import { size } from '../components/game'
 import { Icon } from '../components/icons'
 import { announceChange } from '../components/Layout'
@@ -154,6 +154,46 @@ export default function Upload() {
     add(items)
   }
 
+  // ---- links: the server fetches the file ----
+  const [link, setLink] = useState('')
+  const [downloads, setDownloads] = useState<Download[]>([])
+  const loadDownloads = () => api.get<Download[]>(`${V1}/downloads`).then(setDownloads).catch(() => {})
+  useEffect(() => { loadDownloads() }, [])
+  const active = downloads.some(d => d.status === 'queued' || d.status === 'downloading')
+  const prevDone = useRef(0)
+  useEffect(() => {
+    const done = downloads.filter(d => d.status === 'done').length
+    if (done > prevDone.current && prevDone.current) announceChange()
+    prevDone.current = done
+    if (!active) return
+    const t = window.setTimeout(loadDownloads, 1500)
+    return () => window.clearTimeout(t)
+  }, [downloads]) // eslint-disable-line react-hooks/exhaustive-deps
+  const addLinks = async (text: string) => {
+    const urls = text.split(/\s+/).map(u => u.trim()).filter(u => /^https?:\/\/\S+$/i.test(u))
+    if (!urls.length) { toast('Paste a link that starts with http:// or https://', 'err'); return }
+    for (const url of urls) {
+      try { await api.post(`${V1}/downloads`, { url, platform: params.get('platform') || '' }) } catch (e) { toast((e as Error).message, 'err') }
+    }
+    setLink('')
+    toast(urls.length === 1 ? 'Downloading on the server' : `${urls.length} links are downloading on the server`)
+    loadDownloads()
+  }
+  // ⌘V anywhere on the page (outside a text field) adds the link
+  useEffect(() => {
+    const h = (e: ClipboardEvent) => {
+      const t = e.target as HTMLElement
+      if (t.closest('input, textarea, [contenteditable="true"]')) return
+      const text = e.clipboardData?.getData('text') || ''
+      if (/https?:\/\//i.test(text)) { e.preventDefault(); addLinks(text) }
+    }
+    window.addEventListener('paste', h)
+    return () => window.removeEventListener('paste', h)
+  }) // eslint-disable-line react-hooks/exhaustive-deps
+  const setSystem = async (d: Download, platform: string) => { try { await api.put(`${V1}/downloads/${d.id}`, { platform }); loadDownloads() } catch (e) { toast((e as Error).message, 'err') } }
+  const retry = async (d: Download) => { try { await api.put(`${V1}/downloads/${d.id}`, { retry: true }); loadDownloads() } catch (e) { toast((e as Error).message, 'err') } }
+  const remove = async (d: Download) => { try { await api.del(`${V1}/downloads/${d.id}`); loadDownloads() } catch (e) { toast((e as Error).message, 'err') } }
+
   const waiting = groups.filter(g => g.state === 'waiting' || g.state === 'failed')
   const needSystem = waiting.filter(g => !g.platform).length
   const total = groups.reduce((n, g) => n + g.items.reduce((m, i) => m + i.file.size, 0), 0)
@@ -162,6 +202,37 @@ export default function Upload() {
   return (
     <div className="upload-page">
       <div className="page-head"><div><h1>Upload games</h1><p className="muted">Files go straight into the library, into the system’s folder. Big discs are fine: a broken connection continues where it stopped.</p></div></div>
+      <form className="link-bar" onSubmit={e => { e.preventDefault(); addLinks(link) }}>
+        <Icon name="link" size={16} className="muted" />
+        <input value={link} onChange={e => setLink(e.target.value)} onPaste={e => { const t = e.clipboardData.getData('text'); if (/^https?:\/\/\S+$/i.test(t.trim()) && !link) { e.preventDefault(); addLinks(t) } }}
+          placeholder="Paste a link to a game file — the server downloads it (Google Drive, Dropbox, OneDrive and archive.org links work too)" aria-label="Link to a game file" />
+        <button type="submit" className="btn primary" disabled={!link.trim()}><Icon name="download" size={15} />Download</button>
+      </form>
+      {downloads.length > 0 && <ul className="upload-list">{downloads.map(d => {
+        const pct = d.size_bytes ? Math.floor((d.received / d.size_bytes) * 100) : 0
+        const name = d.file_name || d.url.replace(/^https?:\/\//, '')
+        const opts = d.choices.length ? [...options.filter(o => d.choices.includes(o.value)).map(o => ({ ...o, group: 'Fits this file' })), ...options.filter(o => !d.choices.includes(o.value))] : options
+        return (
+          <li key={d.id} className={`upload-row s-${d.status === 'done' ? 'done' : d.status === 'failed' ? 'failed' : 'sending'}`}>
+            <Icon name="link" size={18} className="muted" />
+            <div className="grow upload-main">
+              <div className="row"><b className="ellipsis" title={d.url}>{name}</b><span className="muted small tnum">{d.size_bytes ? `${size(d.received)} of ${size(d.size_bytes)}` : d.received ? size(d.received) : ''}</span></div>
+              {d.status === 'waiting' ? (
+                <div className="row wrap upload-opts">
+                  <Select ariaLabel="System" value="" onChange={v => setSystem(d, v)} placeholder={d.choices.length > 1 ? `Which system? (${d.choices.length} fit)` : 'Choose the system…'} options={opts} />
+                  <span className="muted small">Downloaded — which system is it for?</span>
+                </div>
+              ) : d.status === 'failed' ? <span className="bad small">{d.error}</span>
+                : d.status === 'done' ? <span className="muted small">In the library</span>
+                  : <div className="progress"><span style={{ width: `${d.status === 'queued' ? 0 : d.size_bytes ? pct : 100}%` }} className={!d.size_bytes && d.status === 'downloading' ? 'indeterminate' : ''} /></div>}
+            </div>
+            {d.status === 'done' && d.game_id ? <Link to={`/games/${d.game_id}`} className="btn sm">Open</Link>
+              : d.status === 'failed' ? <button type="button" className="btn sm" onClick={() => retry(d)}>Try again</button>
+                : (d.status === 'downloading' || d.status === 'queued') ? <span className="muted small tnum">{d.status === 'queued' ? 'waiting' : d.size_bytes ? `${pct}%` : ''}</span> : null}
+            <button type="button" className="icon-btn" title={d.status === 'done' ? 'Remove from the list' : 'Cancel'} onClick={() => remove(d)}><Icon name="x" size={15} /></button>
+          </li>
+        )
+      })}</ul>}
       <div className={`dropzone ${over ? 'over' : ''}`} onDragOver={e => { e.preventDefault(); setOver(true) }} onDragLeave={() => setOver(false)} onDrop={onDrop}>
         <Icon name="upload" size={30} />
         <b>Drop games here</b>
@@ -218,6 +289,7 @@ export default function Upload() {
           <li>Several discs of one game: put them in one folder and upload the folder — an <code>.m3u</code> playlist is made for devices.</li>
           <li>PS1 games with LibCrypt protection need their <code>.sbi</code> file next to the disc; drop both together.</li>
           <li>BIOS files go on the system’s page (Systems → the system → Add BIOS files).</li>
+          <li>A link is downloaded by the server, so you can close the page; a dropped connection picks up where it stopped. Copy a link and press ⌘V (Ctrl+V) anywhere on this page.</li>
           <li>Files can also be copied straight into the library folder; they show up at the next look (every few minutes).</li>
         </ul>
       </section>

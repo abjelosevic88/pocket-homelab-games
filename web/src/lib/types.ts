@@ -105,3 +105,9 @@ export interface Settings {
 }
 
 export interface AIStatus { ready: boolean; provider: string; detail: string }
+
+export interface Download {
+  id: string; url: string; source_url: string; file_name: string; platform: string; choices: string[]
+  size_bytes: number; received: number; status: 'queued' | 'downloading' | 'waiting' | 'done' | 'failed' | 'canceled'; error: string; game_id: number | null
+  created_at: string; updated_at: string
+}
