@@ -1,7 +1,11 @@
 package server
 
 import (
+	"bytes"
 	"context"
+	"image"
+	"image/color"
+	"image/png"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -79,6 +83,23 @@ func (s *Server) seedDemo(ctx context.Context, uid int64) error {
 	set("Mega Man 2", "dropped", false, 6)
 	set("Silent Hill 2", "playing", false, 0)
 
+	// with lookups off (screenshots, CI) a few games get facts written here
+	if !s.cfg.Metadata {
+		facts := map[string][4]string{
+			"Castlevania: Symphony of the Night": {"A vampire hunter explores a sprawling castle room by room, finding new powers that open the way back into places once out of reach.", "Action role-playing, Metroidvania", "Konami", "1997-03-20"},
+			"Metroid Fusion":                     {"A bounty hunter wakes on a research station overrun by a shape-shifting parasite and has to win her abilities back, one sector at a time.", "Action-adventure, Metroidvania", "Nintendo", "2002-11-17"},
+			"Super Metroid":                      {"Alone on a hostile planet, a bounty hunter searches caverns and ruins for a stolen creature, mapping the world as she grows stronger.", "Action-adventure, Metroidvania", "Nintendo", "1994-03-19"},
+			"Chrono Trigger":                     {"A group of friends travels through time to stop a catastrophe, in a role-playing game with many endings.", "Role-playing", "Square", "1995-03-11"},
+			"Silent Hill 2":                      {"A man follows a letter into a fog-covered town where nothing is quite what it seems.", "Survival horror", "Konami", "2001-09-24"},
+		}
+		for name, f := range facts {
+			if id := byName[name]; id > 0 {
+				dev := f[2]
+				_ = s.store.UpdateGameMeta(ctx, id, store.GameMeta{Summary: &f[0], Genres: &f[1], Developer: &dev, Publisher: &dev, ReleaseDate: &f[3]})
+			}
+		}
+	}
+
 	// three months of evenings
 	played := []string{"Castlevania: Symphony of the Night", "Metroid Fusion", "Super Metroid", "Chrono Trigger", "Silent Hill 2", "Tetris", "Sonic The Hedgehog 2", "Super Mario World", "Mario Kart 64", "Shadow of the Colossus"}
 	now := time.Now()
@@ -133,8 +154,45 @@ func (s *Server) seedDemo(ctx context.Context, uid int64) error {
 		data := make([]byte, 8192)
 		rnd.Read(data)
 		_, _ = s.storeSave(ctx, uid, g, "save", "", "", "auto", "browser", data, nil)
-		_, _ = s.storeSave(ctx, uid, g, "state", "", "", "", "browser", data[:4096], nil)
+		for i := 0; i < 2; i++ {
+			_, _ = s.storeSave(ctx, uid, g, "state", "", "", "", "browser", data[i*2048:i*2048+2048], demoPicture(rnd))
+		}
 	}
 	s.log.Info("demo data seeded", "games", len(games))
 	return nil
+}
+
+// demoPicture is a made-up 4:3 game screen (a sky, hills, blocks) for demo states.
+func demoPicture(rnd *rand.Rand) []byte {
+	const w, h = 256, 192
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	sky := color.RGBA{uint8(40 + rnd.Intn(60)), uint8(60 + rnd.Intn(80)), uint8(120 + rnd.Intn(100)), 255}
+	ground := color.RGBA{uint8(30 + rnd.Intn(40)), uint8(90 + rnd.Intn(80)), uint8(40 + rnd.Intn(40)), 255}
+	hill := 110 + rnd.Intn(40)
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			c := sky
+			c.R, c.G = c.R+uint8(y/6), c.G+uint8(y/8)
+			top := hill + int(18*float64(((x/8)%14)-7)*float64(((x/8)%14)-7)/49)
+			if y > top {
+				c = ground
+			}
+			if y > h-24 {
+				c = color.RGBA{90, 60, 40, 255}
+			}
+			img.Set(x, y, c)
+		}
+	}
+	for b := 0; b < 6; b++ {
+		bx, by := rnd.Intn(w-16), 40+rnd.Intn(80)
+		col := color.RGBA{uint8(150 + rnd.Intn(100)), uint8(120 + rnd.Intn(100)), uint8(rnd.Intn(80)), 255}
+		for y := by; y < by+12; y++ {
+			for x := bx; x < bx+12; x++ {
+				img.Set(x, y, col)
+			}
+		}
+	}
+	var buf bytes.Buffer
+	_ = png.Encode(&buf, img)
+	return buf.Bytes()
 }

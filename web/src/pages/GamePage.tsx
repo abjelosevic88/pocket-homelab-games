@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, V1 } from '../lib/api'
+import { useApp } from '../lib/app-context'
 import { fmtDate, fmtDateTime } from '../lib/format'
 import { flags, playtime, STATUS, year } from '../lib/games'
 import type { Game, GameDetail, Save } from '../lib/types'
@@ -14,6 +15,7 @@ export default function GamePage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { settings } = useApp()
   const { data, reload, error } = useAsync(() => api.get<GameDetail>(`${V1}/games/${id}`), [id])
   const [detail, setDetail] = useState<GameDetail | null>(null)
   useEffect(() => { if (data) setDetail(data) }, [data])
@@ -100,7 +102,7 @@ export default function GamePage() {
             {g.summary ? <>
               <p className="game-summary">{g.summary}</p>
               {g.summary_source === 'wikipedia' && g.summary_url && <p className="muted small">From <a href={g.summary_url} target="_blank" rel="noreferrer">Wikipedia</a>, CC BY-SA.</p>}
-            </> : <p className="muted">{g.meta_status === 'pending' ? 'Looking it up…' : 'Nothing found about this game yet.'} {g.can_edit && <button type="button" className="link-btn" onClick={() => setModal('edit')}>Write something</button>}</p>}
+            </> : <p className="muted">{g.meta_status === 'pending' && settings?.metadata !== false ? 'Looking it up…' : 'Nothing about this game yet.'} {g.can_edit && <button type="button" className="link-btn" onClick={() => setModal('edit')}>Write something</button>}</p>}
             {facts.length > 0 && <dl className="kv game-facts">{facts.map(([k, v]) => <div key={k} className="kv-row"><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
           </section>
 
