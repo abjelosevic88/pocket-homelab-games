@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/abjelosevic88/pocket-homelab-games/internal/config"
 	"github.com/abjelosevic88/pocket-homelab-games/internal/library"
 	"github.com/abjelosevic88/pocket-homelab-games/internal/store"
 )
@@ -34,11 +35,14 @@ type app struct {
 	ids   map[string]int64
 }
 
-func newApp(t *testing.T) *app {
+func newApp(t *testing.T, tweak ...func(*config.Config)) *app {
 	t.Helper()
 	dir := t.TempDir()
 	cfg := testConfig(dir)
 	cfg.BaseURL = "http://games.test"
+	for _, f := range tweak {
+		f(cfg)
+	}
 	// a small library: a cartridge, a disc folder with its .sbi, a cue/bin set, firmware
 	put := func(rel string, n int) {
 		p := filepath.Join(cfg.LibraryDir, rel)

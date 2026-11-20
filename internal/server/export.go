@@ -135,12 +135,37 @@ func (s *Server) importDoc(ctx context.Context, uid int64, doc *exportDoc) (map[
 			res["not_found"]++
 			continue
 		}
-		p := store.UserGamePatch{Favorite: &eg.Favorite, Rating: &eg.Rating, Notes: &eg.Notes, Hidden: &eg.Hidden, Core: &eg.Core}
-		if store.ValidStatus(eg.Status) {
-			p.Status = &eg.Status
+		// only fill in what the person has not said yet: an import never
+		// takes away a favourite, a rating or a note already here
+		var cur store.UserGame
+		if g, err := s.store.GetGame(ctx, uid, id); err == nil {
+			cur = g.Mine
 		}
-		if eg.LastPlayedAt != "" {
-			p.LastPlayedAt = &eg.LastPlayedAt
+		yes, changed := true, false
+		p := store.UserGamePatch{}
+		if eg.Favorite && !cur.Favorite {
+			p.Favorite, changed = &yes, true
+		}
+		if eg.Status != "" && store.ValidStatus(eg.Status) && cur.Status == "" {
+			p.Status, changed = &eg.Status, true
+		}
+		if eg.Rating > 0 && cur.Rating == 0 {
+			p.Rating, changed = &eg.Rating, true
+		}
+		if eg.Notes != "" && cur.Notes == "" {
+			p.Notes, changed = &eg.Notes, true
+		}
+		if eg.Hidden && !cur.Hidden {
+			p.Hidden, changed = &yes, true
+		}
+		if eg.Core != "" && cur.Core == "" {
+			p.Core, changed = &eg.Core, true
+		}
+		if eg.LastPlayedAt != "" && eg.LastPlayedAt > cur.LastPlayedAt {
+			p.LastPlayedAt, changed = &eg.LastPlayedAt, true
+		}
+		if !changed {
+			continue
 		}
 		if err := s.store.PatchUserGame(ctx, uid, id, p); err != nil {
 			return res, err

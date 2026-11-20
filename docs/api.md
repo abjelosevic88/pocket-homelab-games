@@ -32,7 +32,8 @@ Two APIs on the same port:
 | `POST /downloads` → `GET /downloads` | `{"url", "platform"?}` — the server fetches a link (Google Drive / Dropbox / OneDrive share links and archive.org items are turned into the file; local-network addresses only for admins), resumes after drops and files it like an upload; `PUT /downloads/{id}` `{"platform"}` when it waits for a system, `{"retry": true}` after a failure; `DELETE` cancels |
 | `GET /library` · `POST /library/scan` · `POST /library/lookup` | Scan status, look now, look up unmatched games again |
 | `POST /import/romm` | `{"url","username","password","saves":true,"covers":true}` — bring favourites, statuses, collections, saves and states over from a RomM server |
-| `GET /export.json` · `POST /import` | Your own data as JSON, and back |
+| `GET /export.json` · `POST /import` | Your own data as JSON, and back; an import only fills in what you have not said yet, so running it twice changes nothing |
+| `GET /pocket/portable` | Pocket Move can copy your ratings, notes, play time and collections out and bring them in (link scopes `move:export`, `move:import`) |
 | `POST /picks` | `{"mood": "30 minutes"}` → three games from your library (Pocket AI / OpenAI, or your lists) |
 
 The player is `GET /play/{id}` (`?state=<save id>` to start from a state, `?fresh=1` to start clean); its files come from `/emulatorjs/*`.
