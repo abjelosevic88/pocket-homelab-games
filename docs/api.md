@@ -34,6 +34,7 @@ Two APIs on the same port:
 | `POST /import/romm` | `{"url","username","password","saves":true,"covers":true}` — bring favourites, statuses, collections, saves and states over from a RomM server |
 | `GET /export.json` · `POST /import` | Your own data as JSON, and back; an import only fills in what you have not said yet, so running it twice changes nothing |
 | `GET /pocket/portable` | Pocket Move can copy your ratings, notes, play time and collections out and bring them in (link scopes `move:export`, `move:import`) |
+| `GET /pocket/search?q=&limit=` · `GET /pocket/day/{YYYY-MM-DD}?tz=` · `GET /pocket/widget` | The same games and play time in the shape every Pocket app shares, for Pocket Search, Pocket Day and Pocket Hub (link scopes `pocket:search`, `pocket:day`, `pocket:widget`; see below) |
 | `POST /picks` | `{"mood": "30 minutes"}` → three games from your library (Pocket AI / OpenAI, or your lists) |
 
 The player is `GET /play/{id}` (`?state=<save id>` to start from a state, `?fresh=1` to start clean); its files come from `/emulatorjs/*`.
@@ -47,6 +48,14 @@ Pocket Games registers with Core as `games` and publishes:
 - `games.status_changed` — `status`, `previous`
 
 Other Pocket apps can be allowed (Core → Links): `games:read` (library, stats, sittings, a day) and `games:write` (statuses, favourites, time played elsewhere). No link can upload, download or delete.
+
+It is on Pocket Hub's **Media** shelf and answers the three box-wide apps on their fixed routes (each link opens only its one route, as the person it acts for):
+
+- **Pocket Search** (`pocket:search`, `!games` / `!game`): the games of the library by name, file name, genre, developer or system (`snes`, `game boy`, `mario gba`). Each line says the system, your status and stars, and how much and when you played it. Games you hid and games whose files are gone are left out.
+- **Pocket Day** (`pocket:day`): the games you played that day, each once with its minutes and when you started and stopped, in your time zone; time added by hand stays on the day you gave it.
+- **Pocket Hub** (`pocket:widget`): the games you played last, the latest first, and your play time this week.
+
+Nothing can be kept from a quick line (no `pocket:capture`): a game comes from a file.
 
 ## /api — RomM-compatible
 

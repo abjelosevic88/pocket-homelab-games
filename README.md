@@ -64,7 +64,7 @@ Everything is configured with environment variables — see [docs/configuration.
 
 ## With Pocket Core
 
-Set `CORE_URL` and `CORE_REGISTRATION_KEY` and Pocket Games joins the box: people sign in with Pocket Core, Pocket AI picks games, and other apps hear about it — `games.played` (a sitting ended, with minutes), `games.added`, `games.status_changed` — so Pocket Day can write what you played into your journal and Pocket Flows can react. Other Pocket apps can be allowed to read your games and play time (`games:read`) or track them for you (`games:write`).
+Set `CORE_URL` and `CORE_REGISTRATION_KEY` and Pocket Games joins the box: people sign in with Pocket Core, Pocket AI picks games, and other apps hear about it — `games.played` (a sitting ended, with minutes), `games.added`, `games.status_changed` — so Pocket Day can write what you played into your journal and Pocket Flows can react. Other Pocket apps can be allowed to read your games and play time (`games:read`) or track them for you (`games:write`). Pocket Search finds your games by name or system (`!games`), Pocket Day lists what you played each day and for how long, and Pocket Hub shows what you played last on its Media shelf.
 
 ## Develop
 

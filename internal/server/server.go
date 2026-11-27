@@ -236,12 +236,13 @@ func (s *Server) registerWithCore(ctx context.Context) error {
 	m := core.Manifest{
 		Slug: "games", Name: "Pocket Games",
 		Description: "Your retro game library: upload games, play them in the browser with saves that follow you, keep favourites, collections and play time, and let RomM apps on handhelds download games and sync saves. Covers and descriptions come without any API key.",
-		Icon:        "/favicon.svg", Version: Version,
+		Icon:        "/favicon.svg", Version: Version, Category: "Media",
 		URL: s.cfg.CoreAppURL, PublicURL: s.cfg.BaseURL, HealthPath: "/healthz", EnvPrefix: "GAMES",
-		Publishes: eventTopics,
-		Offers:    linkOffers,
-		Portable:  portable,
-		Uses:      []core.Use{core.InferenceUse()},
+		Publishes:    eventTopics,
+		Offers:       linkOffers,
+		Portable:     portable,
+		Capabilities: capabilities,
+		Uses:         []core.Use{core.InferenceUse()},
 	}
 	if s.cfg.BaseURL != "" {
 		// ask Core for a relying-party client so "Sign in with Pocket Core" needs no configuration
